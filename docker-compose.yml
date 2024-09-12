@@ -1,0 +1,42 @@
+version: '3.5'
+
+services:
+  nginx-proxy-server:
+    container_name: nginx-proxy-server
+    build:
+      context: ./nginx-proxy-server
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/health" ]
+      interval: 10s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  nginx-auto-configurator:
+    container_name: nginx-auto-configurator
+    build:
+      context: ./nginx-auto-configurator
+      dockerfile: Dockerfile
+    depends_on:
+      - "nginx-proxy-server"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/c/Windows/System32/drivers/etc/hosts:/mnt/c/Windows/System32/drivers/etc/hosts
+      - /etc/hosts:/etc/hosts
+
+    healthcheck:
+      test: [ "CMD", "/app/healthcheck.sh" ]
+      interval: 10s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+networks:
+  default:
+    name: dev-nginx-proxy
